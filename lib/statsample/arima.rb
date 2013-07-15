@@ -44,6 +44,27 @@ module Statsample
         x
       end
 
+      #moving average simulator - ongoing
+      def ma_sim(series, q, n, phi, sigma)
+        #series is a time-series
+        #q is the order for this moving average model
+        #n is number of observations (eg: 1000)
+        #phi are the model parameters containting q values
+
+        mean = series.mean()
+        whitenoise_gen = Distribution::Normal.rng(0, sigma)
+        a = Array.new(n, 0)
+
+        1.upto(n) do |i|
+          #aggregation from parameters and noise
+          phi.each_with_index do |phi_i, j|
+            x[i] += phi_i * whitenoise_gen.call()
+            #^actually, we need backshifted lagged error terms here.
+          end
+          x[i] += mean + whitenoise_gen.call()
+        end
+        x
+      end
     end
   end
 end
