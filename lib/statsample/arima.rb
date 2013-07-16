@@ -29,17 +29,23 @@ module Statsample
         #using random number generator for inclusion of white noise
         err_nor = Distribution::Normal.rng(0, sigma)
 
-        a = Array.new(n, 0)
+        x = Array.new(n, 0)
 
         #For now "phi" are the known model parameters
         #later we will obtain it by Yule-walker/Burg
 
         1.upto(n) do |i|
-          summation = 0
-          phi.each_with_index do |phi_i, j|
-            summation += phi_i * x[i - j - 1]
+          if i <= phi.size
+            #dependent on previous accumulation of x
+            backshifts = Statsample::Vector.new(x[0...i].reverse ,:scale)
+          else
+            #dependent on number of phi size/order
+            backshifts = Statsample::Vector.new(x[(i - phi.size)...i].reverse, :scale)
           end
-          x[i] = summation + err_nor.call()
+          parameters = Statsample::Vector.new(phi[0...backshifts.size] ,:scale)
+
+          summation = (backshifts * parameters).inject(:+)
+          x[i] += summation + err_nor.call()
         end
         x
       end
