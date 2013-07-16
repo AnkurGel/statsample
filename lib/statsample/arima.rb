@@ -45,23 +45,27 @@ module Statsample
       end
 
       #moving average simulator - ongoing
-      def ma_sim(series, q, n, phi, sigma)
-        #series is a time-series
-        #q is the order for this moving average model
+      def ma_sim(n, theta, sigma, q)
         #n is number of observations (eg: 1000)
-        #phi are the model parameters containting q values
+        #theta are the model parameters containting q values
+        #q is the order of MA
 
         mean = series.mean()
         whitenoise_gen = Distribution::Normal.rng(0, sigma)
-        a = Array.new(n, 0)
+        x = Array.new(n, 0)
+        noise_arr = n.times.map { whitenoise_gen.call() }
 
         1.upto(n) do |i|
-          #aggregation from parameters and noise
-          phi.each_with_index do |phi_i, j|
-            x[i] += phi_i * whitenoise_gen.call()
-            #^actually, we need backshifted lagged error terms here.
+          #take care that noise vector doesn't try to index -ve value:
+          if i <= q
+            noises = Statsample::Vector.new(noise_arr[0..i].reverse, :scale)
+          else
+            noises = Statsample::Vector.new(noise_arr[(i-q)..i].reverse, :scale)
           end
-          x[i] += mean + whitenoise_gen.call()
+          weights = [1] + Statsample::Vector.new(theta[0...noises.size - 1])
+
+          summation = (weights * noises).inject(:+)
+          x[i] += mean + summation
         end
         x
       end
