@@ -45,7 +45,7 @@ module Statsample
       end
 
       #moving average simulator - ongoing
-      def ma_sim(n, theta, sigma, q)
+      def ma_sim(n, theta, sigma)
         #n is number of observations (eg: 1000)
         #theta are the model parameters containting q values
         #q is the order of MA
@@ -53,6 +53,7 @@ module Statsample
         mean = series.mean()
         whitenoise_gen = Distribution::Normal.rng(0, sigma)
         x = Array.new(n, 0)
+        q = theta.size
         noise_arr = n.times.map { whitenoise_gen.call() }
 
         1.upto(n) do |i|
