@@ -24,30 +24,38 @@ module Statsample
       def yule_walker()
       end
 
+      def create_vector(arr)
+        Statsample::Vector.new(arr, :scale)
+      end
+
       #tentative AR(p) simulator
       def ar_sim(n, phi, sigma)
         #using random number generator for inclusion of white noise
         err_nor = Distribution::Normal.rng(0, sigma)
+        #creating buffer with 10 random values
+        buffer = Array.new(10, err_nor.call())
 
-        x = Array.new(n, 0)
+        x = buffer + Array.new(n, 0)
 
         #For now "phi" are the known model parameters
         #later we will obtain it by Yule-walker/Burg
 
-        1.upto(n) do |i|
+        #instead of starting from 0, start from 11
+        #and later take away buffer values for failsafe
+        11.upto(n+11) do |i|
           if i <= phi.size
             #dependent on previous accumulation of x
-            backshifts = Statsample::Vector.new(x[0...i].reverse ,:scale)
+            backshifts = create_vector(x[0...i].reverse)
           else
             #dependent on number of phi size/order
-            backshifts = Statsample::Vector.new(x[(i - phi.size)...i].reverse, :scale)
+            backshifts = create_vector(x[(i - phi.size)...i].reverse)
           end
-          parameters = Statsample::Vector.new(phi[0...backshifts.size] ,:scale)
+          parameters = create_vector(phi[0...backshifts.size])
 
           summation = (backshifts * parameters).inject(:+)
           x[i] += summation + err_nor.call()
         end
-        x
+        x - buffer
       end
 
       #moving average simulator - ongoing
@@ -65,17 +73,18 @@ module Statsample
         1.upto(n) do |i|
           #take care that noise vector doesn't try to index -ve value:
           if i <= q
-            noises = Statsample::Vector.new(noise_arr[0..i].reverse, :scale)
+            noises = create_vector(noise_arr[0..i].reverse)
           else
-            noises = Statsample::Vector.new(noise_arr[(i-q)..i].reverse, :scale)
+            noises = create_vector(noise_arr[(i-q)..i].reverse)
           end
-          weights = [1] + Statsample::Vector.new(theta[0...noises.size - 1])
+          weights = [1] + create_vector(theta[0...noises.size - 1])
 
           summation = (weights * noises).inject(:+)
           x[i] += mean + summation
         end
         x
       end
+
     end
   end
 end
