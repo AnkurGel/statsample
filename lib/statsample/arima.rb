@@ -53,7 +53,7 @@ module Statsample
           parameters = create_vector(phi[0...backshifts.size])
 
           summation = (backshifts * parameters).inject(:+)
-          x[i] += summation + err_nor.call()
+          x[i] = summation + err_nor.call()
         end
         x - buffer
       end
@@ -63,12 +63,12 @@ module Statsample
         #n is number of observations (eg: 1000)
         #theta are the model parameters containting q values
         #q is the order of MA
-
-        mean = series.mean()
+        include Statsample::TimeSeries
+        mean = theta.to_ts.mean()
         whitenoise_gen = Distribution::Normal.rng(0, sigma)
         x = Array.new(n, 0)
         q = theta.size
-        noise_arr = n.times.map { whitenoise_gen.call() }
+        noise_arr = (n+1).times.map { whitenoise_gen.call() }
 
         1.upto(n) do |i|
           #take care that noise vector doesn't try to index -ve value:
@@ -77,10 +77,11 @@ module Statsample
           else
             noises = create_vector(noise_arr[(i-q)..i].reverse)
           end
-          weights = [1] + create_vector(theta[0...noises.size - 1])
+          weights = create_vector([1] + theta[0...noises.size - 1])
+
 
           summation = (weights * noises).inject(:+)
-          x[i] += mean + summation
+          x[i] = mean + summation
         end
         x
       end
