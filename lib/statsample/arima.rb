@@ -1,10 +1,11 @@
-require 'debugger'
+#require 'debugger'
 module Statsample
   module ARIMA
-    class ARIMA < Statsample::TimeSeries
+    class ARIMA < Statsample::Vector
+      include Statsample::TimeSeries
 
       def arima(ds, p, i, q)
-        if q.zero? 
+        if q.zero?
           self.ar(p)
         elsif p.zero?
           self.ma(p)
@@ -58,12 +59,11 @@ module Statsample
         x - buffer
       end
 
-      #moving average simulator - ongoing
+      #moving average simulator
       def ma_sim(n, theta, sigma)
         #n is number of observations (eg: 1000)
         #theta are the model parameters containting q values
         #q is the order of MA
-        include Statsample::TimeSeries
         mean = theta.to_ts.mean()
         whitenoise_gen = Distribution::Normal.rng(0, sigma)
         x = Array.new(n, 0)
@@ -78,7 +78,6 @@ module Statsample
             noises = create_vector(noise_arr[(i-q)..i].reverse)
           end
           weights = create_vector([1] + theta[0...noises.size - 1])
-
 
           summation = (weights * noises).inject(:+)
           x[i] = mean + summation

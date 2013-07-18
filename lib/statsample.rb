@@ -162,6 +162,7 @@ module Statsample
   autoload(:Factor, 'statsample/factor')
   autoload(:Graph, 'statsample/graph')
   autoload(:TimeSeries, 'statsample/timeseries')
+  autoload(:ARIMA, 'statsample/arima')
   
   
   class << self
