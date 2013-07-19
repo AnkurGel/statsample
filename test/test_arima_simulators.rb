@@ -1,28 +1,35 @@
 require(File.expand_path(File.dirname(__FILE__)+'/helpers_tests.rb'))
 
 class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
-  context("ARIMA simulations") do
+  def generate_acf(simulation)
+    ts = simulation.to_ts
+    ts.acf
+  end
+
+  def generate_pacf(simulation)
+    ts = simulation.to_ts
+    ts.pacf
+  end
+  context("AR(1) simulations") do
     include Statsample::ARIMA
 
     setup do
       @series = ARIMA.new
       @ar_1_positive = @series.ar_sim(1500, [0.9], 2)
       @ar_1_negative = @series.ar_sim(1500, [-0.9], 2)
+
+      #generating acf
+      @positive_acf = generate_acf(@ar_1_positive)
+      @negative_acf = generate_acf(@ar_1_negative)
+
+      #generating pacf
+      @positive_pacf = generate_pacf(@ar_1_positive)
+      @negative_pacf = generate_pacf(@ar_1_negative)
     end
 
-    def generate_acf(simulation)
-      ts = simulation.to_ts
-      ts.acf
-    end
 
-    def generate_pacf(simulation)
-      ts = simulation.to_ts
-      ts.pacf
-    end
-
-    should "have exponential decay of acf on positive side for AR(1) with phi > 0" do
-      @ar = @ar_1_positive
-      @acf = generate_acf(@ar)
+    should "have exponential decay of acf on positive side with phi > 0" do
+      @acf = @positive_acf
       assert_equal @acf[0], 1.0
       assert_operator @acf[1], :>=, 0.7
       assert_operator @acf[@acf.size - 1], :<=, 0.2
@@ -30,9 +37,8 @@ class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
       #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_positive_phi_acf.png
     end
 
-    should "have series with alternating sign on acf starting on negative side for AR(1) with phi < 0" do
-      @ar = @ar_1_negative
-      @acf = generate_acf(@ar)
+    should "have series with alternating sign on acf starting on negative side with phi < 0" do
+      @acf = @negative_acf
       assert_equal @acf[0], 1.0
       #testing for alternating series
       assert_operator @acf[1], :<, 0
@@ -43,9 +49,8 @@ class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
       #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_negative_phi_acf.png
     end
 
-    should "have positive spike on pacf at lag 1 for AR(1) for phi > 0" do
-      @ar = @ar_1_positive
-      @pacf = generate_pacf(@ar)
+    should "have positive spike on pacf at lag 1 for phi > 0" do
+      @pacf = @positive_pacf
       assert_operator @pacf[1], :>=, 0.7
       assert_operator @pacf[2], :<=, 0.2
       assert_operator @pacf[3], :<=, 0.14
@@ -53,15 +58,62 @@ class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
       #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_postive_phi_pacf.png
     end
 
-    should "have negative spike on pacf at lag 1 for AR(1) for phi < 0" do
-      @ar = @ar_1_negative
-      @pacf = generate_pacf(@ar)
+    should "have negative spike on pacf at lag 1 for phi < 0" do
+      @pacf = @negative_pacf
       assert_operator @pacf[1], :<=, 0
       assert_operator @pacf[1], :<=, -0.5
       assert_operator @pacf[2], :>=, -0.5
       #visualizaton:
       #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_negative_phi_pacf.png
       #[hided @pacf[0] = 1 to convey accurate picture]
+    end
+  end
+
+  context("AR(p) simulations") do
+    include Statsample::ARIMA
+
+    setup do
+      @series = ARIMA.new
+      @ar_p_positive = @series.ar_sim(1500, [0.3, 0.5], 2)
+      @ar_p_negative = @series.ar_sim(1500, [-0.3, -0.5], 2)
+    end
+
+
+    should "have damped sine wave starting on positive side on acf" do
+      @ar = @ar_p_positive
+      @acf = generate_acf(@ar)
+      assert_operator @acf[0], :>=, @acf[1]
+      assert_operator @acf[1], :>=, 0.0
+      assert_operator @acf[1], :>=, @acf[2]
+      assert_operator @acf[2], :>=, @acf[3]
+      #caution: sine curve can split on cartesian plane,
+      #visualization:
+      #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR(p)_positive_phi_sine_wave.png
+    end
+
+    should "have damped sine wave starting on negative side on acf" do
+      @ar = @ar_p_negative
+      @acf = generate_acf(@ar)
+      assert_operator @acf[0], :>=, @acf[1]
+      assert_operator @acf[1], :<=, 0.0
+      assert_operator @acf[1], :>=, @acf[2]
+      #caution: sine curve can split on cartesian plane,
+      #visualization:
+
+    end
+
+    should "have spikes from 1 to p for pacf" do
+      #here p = 2
+      @ar = @ar_p_positive
+      @pacf = generate_pacf(@ar)
+      assert_equal @pacf[0], 1.0
+      assert_operator @pacf[1], :>, @pacf[3]
+      assert_operator @pacf[1], :>, @pacf[4]
+      assert_operator @pacf[1], :>, @pacf[5]
+      assert_operator @pacf[2], :>, @pacf[3]
+      assert_operator @pacf[2], :>, @pacf[4]
+      #visualization:
+      #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR(p)_positive_phi_pacf_spikes.png
     end
   end
 end
