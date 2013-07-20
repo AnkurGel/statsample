@@ -153,5 +153,26 @@ class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
     end
 
   end
+
+  context("MA(q) simulations") do
+    include Statsample::ARIMA
+    setup do
+      @series = ARIMA.new
+      @ma_positive = @series.ar_sim(1500, [0.5, 0.3, 0.2], 2)
+      @ma_negative = @series.ar_sim(1500, [-0.5], 2)
+    end
+
+    should "have q positive spikes at lag 1 to q on acf at positive thetas" do
+      @acf = generate_acf(@ma_positive)
+      assert_operator @acf[1], :>=, @acf[2]
+      assert_operator @acf[2], :>=, @acf[3]
+      assert_operator @acf[3], :>=, @acf[4]
+      #Visualization: http://jsfiddle.net/YeK2c/
+    end
+
+    should "have damped sine wave on pacf at positive thetas" do
+      #visualization: http://jsfiddle.net/7keHK/2/
+    end
+  end
 end
 
