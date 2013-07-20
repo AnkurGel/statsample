@@ -35,6 +35,7 @@ class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
       assert_operator @acf[@acf.size - 1], :<=, 0.2
       #visualization:
       #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_positive_phi_acf.png
+      #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_positive_phi_acf_line.png
     end
 
     should "have series with alternating sign on acf starting on negative side with phi < 0" do
@@ -47,6 +48,7 @@ class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
       assert_operator @acf[4], :>, 0
       #visualization:
       #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_negative_phi_acf.png
+      #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_negative_phi_acf_line.png
     end
 
     should "have positive spike on pacf at lag 1 for phi > 0" do
@@ -56,6 +58,7 @@ class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
       assert_operator @pacf[3], :<=, 0.14
       #visualization:
       #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_postive_phi_pacf.png
+      #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%281%29_postive_phi_pacf_line.png
     end
 
     should "have negative spike on pacf at lag 1 for phi < 0" do
@@ -99,7 +102,7 @@ class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
       assert_operator @acf[1], :>=, @acf[2]
       #caution: sine curve can split on cartesian plane,
       #visualization:
-
+      #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR%28p%29_negative_phi_acf_sine_wave.png
     end
 
     should "have spikes from 1 to p for pacf" do
@@ -115,6 +118,40 @@ class StatsampleArimaSimulatorsTest < MiniTest::Unit::TestCase
       #visualization:
       #https://dl.dropboxusercontent.com/u/102071534/sciruby/AR(p)_positive_phi_pacf_spikes.png
     end
+  end
+
+
+  context("MA(1) simulations") do
+    include Statsample::ARIMA
+    setup do
+      @series = ARIMA.new
+      @ma_positive = @series.ar_sim(1500, [0.5], 2)
+      @ma_negative = @series.ar_sim(1500, [-0.5], 2)
+    end
+
+    should "have one positive spike at lag 1 on acf at positive theta" do
+      @acf = generate_acf(@ma_positive)
+      assert_equal @acf[0], 1.0
+      assert_operator @acf[1], :>=, 0 #test if positive
+      #test if spike
+      assert_operator @acf[2], :>=, 0.2
+      assert_operator @acf[3], :<=, 0.2
+      assert_operator @acf[4], :<=, 0.1
+      #visualization:
+      #https://dl.dropboxusercontent.com/u/102071534/sciruby/MA%281%29_postive_acf.png
+    end
+
+    should "have one negative spike at lag 1 on acf at negative theta" do
+      @acf = generate_acf(@ma_negative)
+      assert_operator @acf[1], :<, 0
+      assert_operator @acf[2], :>=, @acf[1]
+      assert_operator @acf[3], :>=, @acf[1]
+      #visualization:
+      #https://dl.dropboxusercontent.com/u/102071534/sciruby/MA%281%29_negative_acf.png
+      #positive_vs_negative:
+      #https://dl.dropboxusercontent.com/u/102071534/sciruby/MA%281%29_acf_positive_vs_negative.png
+    end
+
   end
 end
 
