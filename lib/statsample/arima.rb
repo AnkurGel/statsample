@@ -85,6 +85,38 @@ module Statsample
         x
       end
 
+      #arma simulator
+      def arma_sim(n, p, q, sigma)
+        #represented by :
+        #http://upload.wikimedia.org/math/2/e/d/2ed0485927b4370ae288f1bc1fe2fc8b.png
+
+        x = Array.new(n, 0)
+        whitenoise_gen = Distribution::Normal.rng(0, sigma)
+        noise_arr = (n+1).times.map { whitenoise_gen.call() }
+
+        1.upto(n) do |i|
+          if i<=p.size
+            backshifts = create_vector(x[0...i].reverse)
+          else
+            backshifts = create_vector(x[(i - p.size)...i].reverse)
+          end
+          parameters = create_vector(p[0...backshifts.size])
+
+          ar_summation = (backshifts * parameters).inject(:+)
+
+          if i <= q.size
+            noises = create_vector(noise_arr[0..i].reverse)
+          else
+            noises = create_vector(noise_arr[(i-q.size)..i].reverse)
+          end
+          weights = create_vector([1] + q[0...noises.size - 1])
+
+          ma_summation = (weights * noises).inject(:+)
+
+          x[i] = ar_summation + ma_summation
+        end
+        x
+      end
     end
   end
 end
