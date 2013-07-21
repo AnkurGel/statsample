@@ -90,12 +90,15 @@ module Statsample
         #represented by :
         #http://upload.wikimedia.org/math/2/e/d/2ed0485927b4370ae288f1bc1fe2fc8b.png
 
-        x = Array.new(n, 0)
-        whitenoise_gen = Distribution::Normal.rng(0, sigma)
-        noise_arr = (n+1).times.map { whitenoise_gen.call() }
 
-        1.upto(n) do |i|
-          if i<=p.size
+        whitenoise_gen = Distribution::Normal.rng(0, sigma)
+        noise_arr = (n+11).times.map { whitenoise_gen.call() }
+
+        buffer = Array.new(10, whitenoise_gen.call())
+        x = buffer + Array.new(n, 0)
+
+        11.upto(n+11) do |i|
+          if i <= p.size
             backshifts = create_vector(x[0...i].reverse)
           else
             backshifts = create_vector(x[(i - p.size)...i].reverse)
@@ -115,7 +118,7 @@ module Statsample
 
           x[i] = ar_summation + ma_summation
         end
-        x
+        x - buffer
       end
     end
   end
